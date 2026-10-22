@@ -30,6 +30,9 @@ import ManageCoupon from "../pages/DashBoard/ManageCoupon";
 import About from "../pages/About";
 import AddReview from "../pages/AddReview";
 import ErrorPage from "../pages/Errorpage";
+import Movers from "../pages/Movers/Movers";
+import Technicians from "../pages/Technicians/Technicians";
+import MyBookings from "../pages/Bookings/MyBookings";
 
 const router = createBrowserRouter([
   {
@@ -45,6 +48,18 @@ const router = createBrowserRouter([
         element: <Apartments />,
       },
       {
+        path: "movers",
+        element: <Movers />,
+      },
+      {
+        path: "technicians",
+        element: <Technicians />,
+      },
+      {
+        path: "my-bookings",
+        element: <MyBookings />,
+      },
+      {
         path: 'about',
         element: <About></About>
       },
@@ -52,7 +67,6 @@ const router = createBrowserRouter([
         path: 'addReview',
         element: <PrivateRoute><AddReview></AddReview></PrivateRoute>
       },
-
     ],
   },
   {

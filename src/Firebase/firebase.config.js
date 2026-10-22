@@ -1,30 +1,21 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
-// const firebaseConfig = {
-//   apiKey: import.meta.env.VITE_apiKey,
-//   authDomain: import.meta.env.VITE_authDomain,
-//   projectId: import.meta.env.VITE_projectId,
-//   storageBucket: import.meta.env.VITE_storageBucket,
-//   messagingSenderId: import.meta.env.VITE_messagingSenderId,
-//   appId: import.meta.env.VITE_appId
-// };
-
 const firebaseConfig = {
-  apiKey: "AIzaSyD8d4yfpH23SGRcIsbCl0TZ7hlDyA4HfRE",
-  authDomain: "block-wise-client.firebaseapp.com",
-  projectId: "block-wise-client",
-  storageBucket: "block-wise-client.firebasestorage.app",
-  messagingSenderId: "660325562494",
-  appId: "1:660325562494:web:4e3a22e7abf3cbdc3a402f"
+  apiKey: "AIzaSyDxMQXAVJQoKHJn2RJbyMZ4VLcdqeN_NGw",
+  authDomain: "rent-apartment-e397a.firebaseapp.com",
+  projectId: "rent-apartment-e397a",
+  storageBucket: "rent-apartment-e397a.firebasestorage.app",
+  messagingSenderId: "747367573230",
+  appId: "1:747367573230:web:ba0f9b39a5fe02acb0b5ff"
 };
 
 // Initialize Firebase
- const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication and get a reference to the service
+// Initialize Firebase Authentication
 export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+export default app;

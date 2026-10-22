@@ -1,144 +1,173 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
-import { FaGoogle } from "react-icons/fa";
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router";
+import { FaGoogle, FaEnvelope, FaLock, FaBuilding } from "react-icons/fa";
 import toast from "react-hot-toast";
-// import useAuth from "../../hooks/useAuth";
-import useUserInfo from "../../hooks/useUserInfo";
+import useAuth from "../../hooks/useAuth";
 import Navbar from "../../Components/Navbar";
 import Footer from "../../Components/Footer";
 import useAxios from "../../hooks/useAxios";
-import useAuth from "../../hooks/useAuth";
 
 const ADMIN_EMAIL = "admin@example.com";
-const ADMIN_PASSWORD="admiN123";
+const ADMIN_PASSWORD = "admiN123";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { signIn, signInWithGoogle } = useAuth();
-  const { role, loading } = useUserInfo();
   const navigate = useNavigate();
+  const location = useLocation();
   const axios = useAxios();
+
+  const from = location.state?.from?.pathname || "/";
 
   const saveUserToDB = async (user) => {
     try {
       await axios.post("/users", {
-        name: user.displayName || "No Name",
+        name: user.displayName || user.email.split("@")[0],
         email: user.email,
+        photoURL: user.photoURL || ""
       });
-      console.log("User saved to DB:", user.email);
     } catch (err) {
-      console.log("User save failed/skipped:", err.message);
+      console.log("DB sync notice:", err.message);
     }
   };
 
-  useEffect(() => {
-    if (isLoggedIn && !loading && role) {
-      if ( adminLoggedIn) {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const res = await signIn(email, password);
+
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        toast.success("Welcome back, Administrator!");
         navigate("/dashboard/admin/profile");
-      } else if (role === "member") {
-        navigate("/dashboard/member/profile");
       } else {
-        navigate("/dashboard/user/profile");
+        toast.success(`Welcome back, ${res.user.displayName || res.user.email}!`);
+        await saveUserToDB(res.user);
+        navigate(from, { replace: true });
       }
+    } catch (err) {
+      console.error(err);
+      let errorMsg = "Login failed. Please verify your email and password.";
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        errorMsg = "Incorrect email or password. Please try again.";
+      } else if (err.code === "auth/user-not-found") {
+        errorMsg = "No account found with this email. Please register first.";
+      } else if (err.code === "auth/too-many-requests") {
+        errorMsg = "Too many failed attempts. Please reset password or try later.";
+      }
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
     }
-    console.log({ isLoggedIn, adminLoggedIn, role })
-  }, [isLoggedIn, loading, role, adminLoggedIn, navigate]);
-
-const handleLogin = async (e) => {
-  e.preventDefault();
-
-  try {
-    const res = await signIn(email, password); 
-
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      toast.success("Admin logged in successfully!");
-      setAdminLoggedIn(true);
-    } else {
-      toast.success("User logged in successfully!");
-      await saveUserToDB(res.user);
-    }
-
-    setIsLoggedIn(true);
-  } catch (err) {
-    toast.error(err.response?.data?.message || err.message || "Login failed");
-    setIsLoggedIn(false);
-  }
-};
-
-
+  };
 
   const handleGoogleLogin = async () => {
+    setIsSubmitting(true);
     try {
       const res = await signInWithGoogle();
-      toast.success("Logged in with Google!");
+      toast.success(`Welcome to Rent Apartment, ${res.user.displayName}!`);
       await saveUserToDB(res.user);
-      setEmail(res.user.email);
-      setIsLoggedIn(true);
+      navigate(from, { replace: true });
     } catch (err) {
-      toast.error(err.message);
+      console.error(err);
+      if (err.code !== "auth/popup-closed-by-user") {
+        toast.error(err.message || "Google sign-in failed");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div>
+    <div className="bg-slate-50 min-h-screen flex flex-col font-sans">
       <Navbar />
-      <div className="py-10 flex items-center justify-center bg-[#f9fafb] px-4">
-        <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-8 space-y-6">
-          <h2 className="text-2xl font-bold text-center text-gray-800">Login</h2>
 
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md bg-white shadow-xl rounded-3xl p-8 sm:p-10 border border-slate-200">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white mx-auto mb-3 shadow-md">
+              <FaBuilding size={24} />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              Welcome to Rent Apartment
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Sign in with your Google account or email & password
+            </p>
+          </div>
+
+          {/* Google Sign In Button */}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting}
+            className="btn w-full bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-300 rounded-2xl py-3 flex items-center justify-center gap-3 shadow-sm transition-all text-sm mb-6"
+          >
+            <FaGoogle className="text-red-500 text-lg" />
+            Continue with Google
+          </button>
+
+          <div className="relative flex py-2 items-center mb-6">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink mx-4 text-xs uppercase font-bold text-slate-400">
+              or sign in with email
+            </span>
+            <div className="flex-grow border-t border-slate-200"></div>
+          </div>
+
+          {/* Email / Password Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block mb-1 font-medium text-gray-700">Email</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                <FaEnvelope className="text-slate-400" /> Email Address
+              </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input input-bordered w-full"
-                placeholder="you@example.com"
+                className="input input-bordered w-full rounded-xl bg-slate-50 text-xs sm:text-sm font-medium focus:bg-white"
+                placeholder="name@example.com"
               />
             </div>
 
             <div>
-              <label className="block mb-1 font-medium text-gray-700">Password</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                <FaLock className="text-slate-400" /> Password
+              </label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input input-bordered w-full"
+                className="input input-bordered w-full rounded-xl bg-slate-50 text-xs sm:text-sm font-medium focus:bg-white"
                 placeholder="••••••••"
               />
             </div>
 
-            <button type="submit" className="btn btn-outline w-full">
-              Login
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="btn btn-primary w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg shadow-blue-500/25 border-none text-sm transition mt-2"
+            >
+              {isSubmitting ? "Signing in..." : "Sign In to Rent Apartment"}
             </button>
           </form>
 
-
-          <div className="divider">OR</div>
-
-          <button
-            onClick={handleGoogleLogin}
-            className="btn w-full flex items-center gap-2 border border-gray-300"
-          >
-            <FaGoogle className="text-lg" />
-            Continue with Google
-          </button>
-
-          <p className="text-sm text-center text-gray-600">
-            Don’t have an account?{" "}
-            <Link to="/register" className="font-semibold hover:underline">
+          {/* Register Link */}
+          <p className="text-xs text-center text-slate-600 mt-6 pt-4 border-t border-slate-100">
+            Don’t have an account yet?{" "}
+            <Link to="/register" className="text-blue-600 font-bold hover:underline">
               Register here
             </Link>
           </p>
         </div>
       </div>
+
       <Footer />
     </div>
   );
